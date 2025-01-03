@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">compraAppDI</string>
+    <string-array name="lugaresCompra">
+        <item>general</item>
+        <item>panadería</item>
+        <item>pescadería</item>
+        <item>frutería</item>
+        <item>carnicería</item>
+        <item>charcutería</item>
+        <item>conservas</item>
+        <item>perfumería</item>
+    </string-array>
 </resources>
