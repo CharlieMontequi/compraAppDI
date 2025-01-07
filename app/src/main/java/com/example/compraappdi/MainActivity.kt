@@ -10,29 +10,46 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.ListView
 import android.widget.Spinner
 import android.widget.Switch
 import android.widget.TextView
-import androidx.activity.enableEdgeToEdge
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
-    private val listaProducto =mutableListOf<Producto>()
+    private val listaProducto = mutableListOf<Producto>()
+
+    private lateinit var adaptador: AdaptadorPersonalizado
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        val listado = findViewById<ListView>(R.id.listView)
+        adaptador = AdaptadorPersonalizado(this, R.layout.elementos_lista_compra, listaProducto)
+        listado.adapter = adaptador
+
 
         val botonAniadirCompra = findViewById<Button>(R.id.b_aniadie)
-        botonAniadirCompra.setOnClickListener { showDialogoCompra() }
+        botonAniadirCompra.setOnClickListener {
+            showDialogoCompra()
+        }
+        val botonImprimir = findViewById<Button>(R.id._imprimir)
+        botonImprimir.setOnClickListener { showDialogImprimir() }
 
+        val botonBorrarSeleccion = findViewById<Button>(R.id.b_borrar)
+        botonBorrarSeleccion.setOnClickListener {
+            borrarProductoSelecciondo()
+        }
 
     }
-    private fun showDialogoCompra(){
+    private fun borrarProductoSelecciondo(){
 
-        val dialogView = LayoutInflater.from(this). inflate(R.layout.emergente_add,null)
+    }
+
+    private fun showDialogoCompra() {
+
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.emergente_add, null)
         val nombrePoducto = dialogView.findViewById<EditText>(R.id.editTextNombreProducto)
         val cantidad = dialogView.findViewById<EditText>(R.id.editTextNumber)
         val lugarCompra = dialogView.findViewById<Spinner>(R.id.spinner)
@@ -40,32 +57,81 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         val arraySitios = resources.getStringArray(R.array.lugaresCompra)
         val adaptadorSpinner = ArrayAdapter(this, android.R.layout.simple_spinner_item, arraySitios)
         adaptadorSpinner.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        lugarCompra.adapter= adaptadorSpinner
+        lugarCompra.adapter = adaptadorSpinner
 
         val builder = AlertDialog.Builder(this)
         builder.setView(dialogView)
             .setCancelable(false) // evitar que se cierre al pinchar fuera
-            .setNegativeButton("Cancelar"){dialog, _ -> dialog.dismiss()
+            .setNegativeButton("Cancelar") { dialog, _ ->
+                dialog.dismiss()
             }
-            .setPositiveButton("Guardar"){_, _->
-                val producto = Producto(nombrePoducto.text.toString(), cantidad.text.toString(), lugarCompra.selectedItem.toString(), urgente.isChecked )
+            .setPositiveButton("Guardar") { _, _ ->
+                val producto = Producto(
+                    nombrePoducto.text.toString(),
+                    cantidad.text.toString(),
+                    lugarCompra.selectedItem.toString(),
+                    urgente.isChecked
+                )
                 listaProducto.add(producto)
+                adaptador.notifyDataSetChanged()
+
+
             }
 
         builder.create().show()
     }
 
-// adaptador personalizado
+    private fun showDialogImprimir() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.imprimir_compra, null)
+        val tvImprimir = dialogView.findViewById<TextView>(R.id.textViewListaImpresa)
+        var posicion = 0
+        val builder = AlertDialog.Builder(this)
+
+
+        if (listaProducto.isNotEmpty()) {
+
+            val texto = StringBuilder()
+            for (productoEspecifico in listaProducto) {
+                texto.append(
+                    "${productoEspecifico.nombre} ${productoEspecifico.cantidad} ${productoEspecifico.lugarCompra} ${
+                        if (productoEspecifico.urgente) "Urge" else "No urge"
+                    }\n"
+                )
+            }
+            // Asigna el texto generado al TextView
+            tvImprimir.text = texto.toString()
+        }
+
+        builder.setView(dialogView)
+            .setCancelable(false)
+            .setNegativeButton("Cancelar") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setPositiveButton("Guardar") { _, _ ->
+
+                Toast.makeText(
+                    applicationContext,
+                    "Se ha guardado la lista correctamente",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+            }
+        builder.create().show()
+
+    }
+
+    // adaptador personalizado
     private inner class AdaptadorPersonalizado(
         context: Context,
         resource: Int,
-        objets: Array<String>
-    ) : ArrayAdapter<String>(context, resource, objets){
+        private val objets: MutableList<Producto>
+    ) : ArrayAdapter<Producto>(context, resource, objets) {
 
         override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
 
             return crearFilaPersonalizada(position, convertView, parent)
         }
+
         private fun crearFilaPersonalizada(
             position: Int,
             convertView: View?,
@@ -77,18 +143,32 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
                 parent,
                 false
             )
-            rowView.findViewById<CheckBox>(R.id.ChechBoxBorrar)
-            rowView.findViewById<TextView>(R.id.TVNombre)
+            val productoEspecifico = listaProducto[position]
+            rowView.findViewById<CheckBox>(R.id.ChechBoxBorrar).text =
+                "${productoEspecifico.nombre} ${productoEspecifico.cantidad} ${productoEspecifico.lugarCompra} ${if (productoEspecifico.urgente) "Urge" else "No urge"}\n"
 
             return rowView
+        }
+
+        override fun getView(
+            position: Int,
+            convertView: View?,
+            parent: ViewGroup
+        ): View {
+            // Este método se llama para mostrar una vista personalizada en el elemento seleccionado
+
+            // Llama a la función para crear la fila personalizada y la devuelve
+            return crearFilaPersonalizada(position, convertView, parent)
         }
     }
 
     override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-        TODO("Not yet implemented")
+        val checkBox = findViewById<CheckBox>(R.id.ChechBoxBorrar)
+        checkBox.isChecked
+
     }
 
     override fun onNothingSelected(parent: AdapterView<*>?) {
-        TODO("Not yet implemented")
+
     }
 }
