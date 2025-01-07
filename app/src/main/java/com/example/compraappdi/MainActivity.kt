@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val listado = findViewById<ListView>(R.id.listView)
+        val listado = findViewById<ListView>(R.id.listaCompra)
         adaptador = AdaptadorPersonalizado(this, R.layout.elementos_lista_compra, listaProducto)
         listado.adapter = adaptador
 
@@ -41,10 +41,35 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
         botonBorrarSeleccion.setOnClickListener {
             borrarProductoSelecciondo()
         }
+        val botonLimpiar = findViewById<Button>(R.id.b_limpiar)
+        botonLimpiar.setOnClickListener {
+            listaProducto.removeAll(listaProducto)
+            adaptador.notifyDataSetChanged()
+        }
 
     }
     private fun borrarProductoSelecciondo(){
 
+        val productosParaBorrar = mutableListOf<Producto>()
+        val listado = findViewById<ListView>(R.id.listaCompra)
+        for (i in 0 until listado.childCount){
+            val rowview = listado.getChildAt(i)
+            val checkboxMarcado = rowview.findViewById<CheckBox>(R.id.ChechBoxBorrar)
+            if(checkboxMarcado.isChecked){
+                productosParaBorrar.add(listaProducto[i])
+            }
+        }
+        for(i in 0 until listado.childCount){
+            val rowview = listado.getChildAt(i)
+            val checkboxMarcado = rowview.findViewById<CheckBox>(R.id.ChechBoxBorrar)
+            if (checkboxMarcado.isChecked){
+                checkboxMarcado.isChecked=false
+
+            }
+        }
+
+        listaProducto.removeAll(productosParaBorrar)
+        adaptador.notifyDataSetChanged()
     }
 
     private fun showDialogoCompra() {
@@ -145,7 +170,7 @@ class MainActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener {
             )
             val productoEspecifico = listaProducto[position]
             rowView.findViewById<CheckBox>(R.id.ChechBoxBorrar).text =
-                "${productoEspecifico.nombre} ${productoEspecifico.cantidad} ${productoEspecifico.lugarCompra} ${if (productoEspecifico.urgente) "Urge" else "No urge"}\n"
+                "${productoEspecifico.cantidad} ${productoEspecifico.nombre} ${productoEspecifico.lugarCompra} ${if (productoEspecifico.urgente) "Urge" else "No urge"}\n"
 
             return rowView
         }
